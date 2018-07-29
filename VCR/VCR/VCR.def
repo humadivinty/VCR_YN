@@ -1,0 +1,11 @@
+LIBRARY
+EXPORTS
+
+InitAutoVehType
+RegisterMessage
+GetVehType
+ExitAutoVeh
+DelVehType
+FlushQueue
+GetQueueLength
+IsOccupied

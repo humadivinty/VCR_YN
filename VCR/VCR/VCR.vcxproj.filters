@@ -1,0 +1,127 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="coredump">
+      <UniqueIdentifier>{858db46a-cdb4-470c-b544-8688f30a7a1e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="tinyxml">
+      <UniqueIdentifier>{2f0138b8-072d-42e1-a607-47b4037f993e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="camera">
+      <UniqueIdentifier>{b18c2aff-0045-497e-b5b4-31c87e3661c0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="utilytyTool">
+      <UniqueIdentifier>{4b81aa91-6d53-494c-96c7-b9257f55d7e2}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="stdafx.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="VCR.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="coredump\MiniDumper.h">
+      <Filter>coredump</Filter>
+    </ClInclude>
+    <ClInclude Include="tinyxml\tinystr.h">
+      <Filter>tinyxml</Filter>
+    </ClInclude>
+    <ClInclude Include="tinyxml\tinyxml.h">
+      <Filter>tinyxml</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera\BaseCamera.h">
+      <Filter>camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera\Camera6467_plate.h">
+      <Filter>camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera\CameraResult.h">
+      <Filter>camera</Filter>
+    </ClInclude>
+    <ClInclude Include="utilityTool\ToolFunction.h">
+      <Filter>utilytyTool</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera\Camera6467_VFR.h">
+      <Filter>camera</Filter>
+    </ClInclude>
+    <ClInclude Include="ResultListManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="VCR.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="dllmain.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="coredump\MiniDumper.cpp">
+      <Filter>coredump</Filter>
+    </ClCompile>
+    <ClCompile Include="tinyxml\tinystr.cpp">
+      <Filter>tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="tinyxml\tinyxml.cpp">
+      <Filter>tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="tinyxml\tinyxmlerror.cpp">
+      <Filter>tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="tinyxml\tinyxmlparser.cpp">
+      <Filter>tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera\BaseCamera.cpp">
+      <Filter>camera</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera\Camera6467_plate.cpp">
+      <Filter>camera</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera\CameraResult.cpp">
+      <Filter>camera</Filter>
+    </ClCompile>
+    <ClCompile Include="utilityTool\ToolFunction.cpp">
+      <Filter>utilytyTool</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera\Camera6467_VFR.cpp">
+      <Filter>camera</Filter>
+    </ClCompile>
+    <ClCompile Include="ResultListManager.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="VCR.def">
+      <Filter>源文件</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="VCR.rc">
+      <Filter>资源文件</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>
