@@ -1,6 +1,10 @@
 #include "stdafx.h"
 #include "ResultListManager.h"
 #include "utilityTool/ToolFunction.h"
+#include "utilityTool/log4z.h"
+#include <new>
+#include <exception>
+
 
 
 ResultListManager::ResultListManager()
@@ -28,140 +32,368 @@ bool ResultListManager::empty()
 
 ResultListManager::Result_Type ResultListManager::front()
 {
-    std::unique_lock<std::mutex> locker(m_mtx);
-    Result_Type value;
-    if (!m_list.empty())
+    try
     {
-        value = m_list.front();
+        std::unique_lock<std::mutex> locker(m_mtx);
+        Result_Type value;
+        if (!m_list.empty())
+        {
+            value = m_list.front();
+        }
+        return value;
     }
-    return value;
+    catch (std::bad_exception& e)
+    {
+        LOGFMTE("ResultListManager::front, bad_exception, error msg = %s", e.what());
+        return std::make_shared<CameraResult>();
+    }
+    catch (std::bad_alloc& e)
+    {
+        LOGFMTE("ResultListManager::front, bad_alloc, error msg = %s", e.what());
+        return std::make_shared<CameraResult>();
+    }
+    catch (std::exception& e)
+    {
+        LOGFMTE("ResultListManager::front, exception, error msg = %s.", e.what());
+        return std::make_shared<CameraResult>();
+    }
+    catch (void*)
+    {
+        LOGFMTE("ResultListManager::front,  void* exception");
+        return std::make_shared<CameraResult>();
+    }
+    catch (...)
+    {
+        LOGFMTE("ResultListManager::front,  unknown exception");
+        return std::make_shared<CameraResult>();
+    }
 }
 
 ResultListManager::Result_Type ResultListManager::GetOneByIndex(int iPosition)
 {
-    std::unique_lock<std::mutex> locker(m_mtx);
-    Result_Type value;
-    if (m_list.empty())
+    try
     {
+        std::unique_lock<std::mutex> locker(m_mtx);
+        Result_Type value;
+        if (m_list.empty())
+        {
+            return value;
+        }
+
+        int iPos = 0;
+        for (list_Type::const_iterator it = m_list.cbegin(); it != m_list.cend(); it++)
+        {
+            if (iPos == iPosition)
+            {
+                value = *it;
+                break;
+            }
+            iPos++;
+        }
         return value;
     }
-
-    int iPos = 0;
-    for (list_Type::const_iterator it = m_list.cbegin(); it != m_list.cend(); it++)
+    catch (std::bad_exception& e)
     {
-        if (iPos == iPosition)
-        {
-            value = *it;
-            break;
-        }
-        iPos++;
+        LOGFMTE("GetOneByIndex, bad_exception, error msg = %s", e.what());
+        return std::make_shared<CameraResult>();
     }
-    return value;
+    catch (std::bad_alloc& e)
+    {
+        LOGFMTE("GetOneByIndex, bad_alloc, error msg = %s", e.what());
+        return std::make_shared<CameraResult>();
+    }
+    catch (std::exception& e)
+    {
+        LOGFMTE("GetOneByIndex, exception, error msg = %s.", e.what());
+        return std::make_shared<CameraResult>();
+    }
+    catch (void*)
+    {
+        LOGFMTE("ResultListManager::GetOneByIndex,index = %d,   void* exception", iPosition);
+        return std::make_shared<CameraResult>();
+    }
+    catch (...)
+    {
+        LOGFMTE("ResultListManager::GetOneByIndex,index = %d,   unknown exception", iPosition);
+        return std::make_shared<CameraResult>();
+    }
 }
 
 void ResultListManager::pop_front()
 {
-    std::unique_lock<std::mutex> locker(m_mtx);
-    Result_Type value;
-    if (!m_list.empty())
+    try
     {
-        m_list.pop_front();
+        std::unique_lock<std::mutex> locker(m_mtx);
+        Result_Type value;
+        if (!m_list.empty())
+        {
+            m_list.pop_front();
+        }
+    }
+    catch (std::bad_exception& e)
+    {
+        LOGFMTE("ResultListManager::pop_front, bad_exception, error msg = %s", e.what());
+    }
+    catch (std::bad_alloc& e)
+    {
+        LOGFMTE("ResultListManager::pop_front, bad_alloc, error msg = %s", e.what());
+    }
+    catch (std::exception& e)
+    {
+        LOGFMTE("ResultListManager::pop_front, exception, error msg = %s.", e.what());
+    }
+    catch (void*)
+    {
+        LOGFMTE("ResultListManager::pop_front,  void* exception");
+    }
+    catch (...)
+    {
+        LOGFMTE("ResultListManager::pop_front,  unknown exception");
     }
 }
 
 void ResultListManager::pop_back()
 {
-    std::unique_lock<std::mutex> locker(m_mtx);
-    Result_Type value;
-    if (!m_list.empty())
+    try
     {
-        m_list.pop_back();
+        std::unique_lock<std::mutex> locker(m_mtx);
+        Result_Type value;
+        if (!m_list.empty())
+        {
+            m_list.pop_back();
+        }
+    }
+    catch (std::bad_exception& e)
+    {
+        LOGFMTE("ResultListManager::pop_back, bad_exception, error msg = %s", e.what());
+    }
+    catch (std::bad_alloc& e)
+    {
+        LOGFMTE("ResultListManager::pop_back, bad_alloc, error msg = %s", e.what());
+    }
+    catch (std::exception& e)
+    {
+        LOGFMTE("ResultListManager::pop_back, exception, error msg = %s.", e.what());
+    }
+    catch (void*)
+    {
+        LOGFMTE("ResultListManager::pop_back,  void* exception");
+    }
+    catch (...)
+    {
+        LOGFMTE("ResultListManager::pop_back,  unknown exception");
     }
 }
 
 void ResultListManager::push_back(Result_Type result)
 {
-    std::unique_lock<std::mutex> locker(m_mtx);
-    if (result != NULL)
+    try
     {
-        m_list.push_back(result);
-    }    
+        std::unique_lock<std::mutex> locker(m_mtx);
+        if (result != NULL)
+        {
+            m_list.push_back(result);
+        }
+    }
+    catch (std::bad_exception& e)
+    {
+        LOGFMTE("ResultListManager::push_back, bad_exception, error msg = %s", e.what());
+    }
+    catch (std::bad_alloc& e)
+    {
+        LOGFMTE("ResultListManager::push_back, bad_alloc, error msg = %s", e.what());
+    }
+    catch (std::exception& e)
+    {
+        LOGFMTE("ResultListManager::push_back, exception, error msg = %s.", e.what());
+    }
+    catch (void*)
+    {
+        LOGFMTE("ResultListManager::push_back,  void* exception");
+    }
+    catch (...)
+    {
+        LOGFMTE("ResultListManager::push_back,  unknown exception");
+    }
 }
 
 int ResultListManager::GetPositionByPlateNo(const char* plateNo)
 {
-    std::unique_lock<std::mutex> locker(m_mtx);
-    int iRet = -1;
-    if (m_list.empty() || NULL == plateNo)
+    try
     {
+        std::unique_lock<std::mutex> locker(m_mtx);
+        int iRet = -1;
+        if (m_list.empty() || NULL == plateNo)
+        {
+            return iRet;
+        }
+        int iPos = 0;
+        std::string strSrcPlate(plateNo);
+        for (list_Type::const_iterator it = m_list.cbegin(); it != m_list.cend(); it++)
+        {
+            Result_Type value = *it;
+            std::string strDestPlate(value->chPlateNO);
+            if (std::string::npos != strSrcPlate.find(strDestPlate))
+            {
+                iRet = iPos;
+                break;
+            }
+            else if (Tool_DimCompare(strSrcPlate.c_str(), strDestPlate.c_str()))
+            {
+                iRet = iPos;
+                break;
+            }
+            else
+            {
+                iPos++;
+            }
+        }
         return iRet;
     }
-    int iPos = 0;
-    std::string strSrcPlate(plateNo);
-    for (list_Type::const_iterator it = m_list.cbegin(); it != m_list.cend(); it++)
+    catch (std::bad_exception& e)
     {
-        Result_Type value = *it;
-        std::string strDestPlate(value->chPlateNO);
-        if (std::string::npos != strSrcPlate.find(strDestPlate))
-        {
-            iRet = iPos;
-            break;
-        }
-        else if (Tool_DimCompare(strSrcPlate.c_str(), strDestPlate.c_str()))
-        {
-            iRet = iPos;
-            break;
-        }
-        else
-        {
-            iPos++;
-        }
+        LOGFMTE("ResultListManager::GetPositionByPlateNo, bad_exception, error msg = %s", e.what());
+        return -1;
     }
-    return iRet;
+    catch (std::bad_alloc& e)
+    {
+        LOGFMTE("ResultListManager::GetPositionByPlateNo, bad_alloc, error msg = %s", e.what());
+        return -1;
+    }
+    catch (std::exception& e)
+    {
+        LOGFMTE("ResultListManager::GetPositionByPlateNo, exception, error msg = %s.", e.what());
+        return -1;
+    }
+    catch (void*)
+    {
+        LOGFMTE("ResultListManager::GetPositionByPlateNo,  void* exception");
+        return -1;
+    }
+    catch (...)
+    {
+        LOGFMTE("ResultListManager::GetPositionByPlateNo,  unknown exception");
+        return -1;
+    }
 }
 
 void ResultListManager::DeleteToPosition(int position)
 {
-    if ( position < 0)
+    try
     {
-        return;
-    }
-    std::unique_lock<std::mutex> locker(m_mtx);
-    if (!m_list.empty())
-    {
-        for (int i = 0; i <= position; i++)
+        if (position < 0)
         {
-            m_list.pop_front();
+            return;
         }
+        std::unique_lock<std::mutex> locker(m_mtx);
+        size_t iPosition = (position >= m_list.size()) ? (m_list.size() - 1) : position;
+        if (!m_list.empty())
+        {
+            for (int i = 0; i <= iPosition; i++)
+            {
+                m_list.pop_front();
+            }
+        }
+    }
+    catch (std::bad_exception& e)
+    {
+        LOGFMTE("ResultListManager::DeleteToPosition, bad_exception, error msg = %s", e.what());
+    }
+    catch (std::bad_alloc& e)
+    {
+        LOGFMTE("ResultListManager::DeleteToPosition, bad_alloc, error msg = %s", e.what());
+    }
+    catch (std::exception& e)
+    {
+        LOGFMTE("ResultListManager::DeleteToPosition, exception, error msg = %s.", e.what());
+    }
+    catch (void*)
+    {
+        LOGFMTE("ResultListManager::DeleteToPosition,  void* exception");
+    }
+    catch (...)
+    {
+        LOGFMTE("ResultListManager::DeleteToPosition,  unknown exception");
     }
 }
 
 std::string ResultListManager::GetAllPlateString()
 {
-    std::unique_lock<std::mutex> locker(m_mtx);
-    std::string strPlateListString;
-    if (m_list.empty())
+    try
     {
-        return strPlateListString;
-    }
-    else
-    {
-        for (list_Type::const_iterator it = m_list.cbegin(); it != m_list.cend(); it++)
+        std::unique_lock<std::mutex> locker(m_mtx);
+        std::string strPlateListString;
+        if (m_list.empty())
         {
-            Result_Type value = *it;
-            strPlateListString.append(value->chPlateNO);
-            strPlateListString.append("\n");
+            return strPlateListString;
         }
-        return strPlateListString;
+        else
+        {
+            for (list_Type::const_iterator it = m_list.cbegin(); it != m_list.cend(); it++)
+            {
+                Result_Type value = *it;
+                strPlateListString.append(value->chPlateNO);
+                strPlateListString.append("\n");
+            }
+            return strPlateListString;
+        }
+    }
+    catch (std::bad_exception& e)
+    {
+        LOGFMTE("ResultListManager::GetAllPlateString, bad_exception, error msg = %s", e.what());
+        return std::string();
+    }
+    catch (std::bad_alloc& e)
+    {
+        LOGFMTE("ResultListManager::GetAllPlateString, bad_alloc, error msg = %s", e.what());
+        return std::string();
+    }
+    catch (std::exception& e)
+    {
+        LOGFMTE("ResultListManager::GetAllPlateString, exception, error msg = %s.", e.what());
+        return std::string();
+    }
+    catch (void*)
+    {
+        LOGFMTE("ResultListManager::GetAllPlateString,  void* exception");
+        return std::string();
+    }
+    catch (...)
+    {
+        LOGFMTE("ResultListManager::DeleteToPosition,  unknown exception");
+        return std::string();
     }
 }
 
 void ResultListManager::ClearALL()
 {
-    std::unique_lock<std::mutex> locker(m_mtx);
-    if (!m_list.empty())
+    try
     {
-        m_list.clear();
+        std::unique_lock<std::mutex> locker(m_mtx);
+        if (!m_list.empty())
+        {
+            m_list.clear();
+        }
+    }
+    catch (std::bad_exception& e)
+    {
+        LOGFMTE("ResultListManager::DeleteToPosition, ClearALL, error msg = %s", e.what());
+    }
+    catch (std::bad_alloc& e)
+    {
+        LOGFMTE("ResultListManager::DeleteToPosition, ClearALL, error msg = %s", e.what());
+    }
+    catch (std::exception& e)
+    {
+        LOGFMTE("ResultListManager::DeleteToPosition, ClearALL, error msg = %s.", e.what());
+    }
+    catch (void*)
+    {
+        LOGFMTE("ResultListManager::ClearALL,  void* exception");
+    }
+    catch (...)
+    {
+        LOGFMTE("ResultListManager::ClearALL,  unknown exception");
     }
 }
 

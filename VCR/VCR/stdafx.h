@@ -22,7 +22,7 @@
 #include<ctime>
 #include<atltime.h>
 
-#define DLL_VERSION "2018040104"
+#define DLL_VERSION "2018080501"
 #define INI_FILE_NAME "\\XLW_VCR.ini"
 #define DLL_LOG_NAME "XLW_VCR.txt"
 

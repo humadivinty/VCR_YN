@@ -84,7 +84,7 @@ VCR_API   int VCR_DECL DelVehType();
 // Returns Describe:  删除的车型数量
 // 注：如无相关的接口功能，需保留本接口，并保证返回值为0。
 //************************************
-VCR_API   int  VCR_DECL FlushQueue();
+VCR_API   int  VCR_DECL FlushQueue(int index);
 
 //************************************
 // Method:        GetQueueLength

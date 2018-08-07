@@ -47,4 +47,6 @@ public:
     afx_msg void OnBnClickedCheckUsemsg();
 private:
     bool m_bUseMsgModel;
+public:
+    afx_msg void OnTimer(UINT_PTR nIDEvent);
 };

@@ -110,8 +110,8 @@ VCR_API   int VCR_DECL GetVehType(int nIndex /*= -1*/)
     std::shared_ptr<CameraResult> pTempResult = g_Camera_VFR->GetFrontResultByPosition(iIndex);
     if (pTempResult == nullptr)
     {
-        Tool_WriteFormatLog("GetVehType ,the result is not ready, return 0");
-        return 0;
+        Tool_WriteFormatLog("GetVehType ,the result is not ready, return TRUCK_TYPE_5");
+        return TRUCK_TYPE_5;
     }
     Tool_WriteFormatLog("GetVehType ,get the result , plate no = %s, vehType = %d", 
         pTempResult->chPlateNO,
@@ -157,9 +157,9 @@ VCR_API   int VCR_DECL DelVehType()
     return iVehType;
 }
 
-VCR_API   int VCR_DECL FlushQueue()
+VCR_API   int VCR_DECL FlushQueue(int index)
 {    
-    Tool_WriteFormatLog("FlushQueue, begin.");
+    Tool_WriteFormatLog("FlushQueue, begin, index = %d.", index);
     int iSize = 0;
     if (g_Camera_VFR)
     {

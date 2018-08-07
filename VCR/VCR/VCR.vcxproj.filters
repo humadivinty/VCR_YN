@@ -69,6 +69,9 @@
     <ClInclude Include="resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="utilityTool\log4z.h">
+      <Filter>utilytyTool</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -112,6 +115,9 @@
     </ClCompile>
     <ClCompile Include="ResultListManager.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="utilityTool\log4z.cpp">
+      <Filter>utilytyTool</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -20,6 +20,7 @@
 #endif
 
 #define MY_MGS (WM_USER+1)
+#define TIME_ID_VEH 1
 
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
 
@@ -81,6 +82,7 @@ BEGIN_MESSAGE_MAP(CTest_VCR_YNDlg, CDialogEx)
     ON_BN_CLICKED(IDC_BUTTON_IsOccupied, &CTest_VCR_YNDlg::OnBnClickedButtonIsoccupied)
     ON_BN_CLICKED(IDC_BUTTON_ExitAutoVeh, &CTest_VCR_YNDlg::OnBnClickedButtonExitautoveh)
     ON_BN_CLICKED(IDC_CHECK_USEMSG, &CTest_VCR_YNDlg::OnBnClickedCheckUsemsg)
+    ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 
@@ -192,6 +194,8 @@ void CTest_VCR_YNDlg::OnBnClickedButtonInitautovehtype()
     if (TRUE == bConnect)
     {
         sprintf_s(szLog, sizeof(szLog), "InitAutoVehType , %s, return true.", szIpAddress);
+
+        SetTimer(TIME_ID_VEH, 2000, NULL);
     }
     else
     {
@@ -244,7 +248,7 @@ void CTest_VCR_YNDlg::OnBnClickedButtonDelvehtype()
 void CTest_VCR_YNDlg::OnBnClickedButtonFlushqueue()
 {
     // TODO:  在此添加控件通知处理程序代码
-    int iVehType = FlushQueue();
+    int iVehType = FlushQueue(0);
     TCHAR szLog[MAX_PATH] = { 0 };
     sprintf_s(szLog, sizeof(szLog), "FlushQueue ,return code = %d.", iVehType);
     //MessageBox(szLog);
@@ -282,6 +286,7 @@ void CTest_VCR_YNDlg::OnBnClickedButtonExitautoveh()
     sprintf_s(szLog, sizeof(szLog), "ExitAutoVeh ,finish.");
     //MessageBox(szLog);
     ShowMessage(szLog);
+    KillTimer(TIME_ID_VEH);
 }
 
 LRESULT CTest_VCR_YNDlg::OnMyMsgHandler(WPARAM wParam, LPARAM lParam)
@@ -306,4 +311,39 @@ void CTest_VCR_YNDlg::OnBnClickedCheckUsemsg()
     CButton* pBtn = (CButton*)GetDlgItem(IDC_CHECK_USEMSG);
     int iState = pBtn->GetCheck();
     m_bUseMsgModel = (iState == 0) ? false : true;
+}
+
+
+void CTest_VCR_YNDlg::OnTimer(UINT_PTR nIDEvent)
+{
+    // TODO:  在此添加消息处理程序代码和/或调用默认值
+    int iVehType = GetQueueLength();
+    TCHAR szLog[MAX_PATH] = { 0 };
+    sprintf_s(szLog, sizeof(szLog), "GetQueueLength ,return code = %d.", iVehType);
+    //MessageBox(szLog);
+    ShowMessage(szLog);
+    switch (nIDEvent)
+    {
+    case TIME_ID_VEH:
+        iVehType = GetQueueLength();
+        if (iVehType > 0)
+        {
+            sprintf_s(szLog, sizeof(szLog), "GetQueueLength ,return code = %d.", iVehType);
+            //MessageBox(szLog);
+            ShowMessage(szLog);
+            OnBnClickedButtonGetvehtype();
+        }
+        else
+        {
+            if (0 == IsOccupied())
+            {
+                FlushQueue(0);
+            }
+        }
+        break;
+    default:
+        break;
+    }
+
+    CDialogEx::OnTimer(nIDEvent);
 }

@@ -43,7 +43,7 @@ m_hStatusCheckThread(NULL)
     ReadConfig();
     InitializeCriticalSection(&m_csResult);
 
-    m_hStatusCheckThread = (HANDLE)_beginthreadex(NULL, 0, Camera_StatusCheckThread, this, 0, NULL);
+    //m_hStatusCheckThread = (HANDLE)_beginthreadex(NULL, 0, Camera_StatusCheckThread, this, 0, NULL);
 }
 
 
@@ -79,7 +79,7 @@ m_hStatusCheckThread(NULL)
 
     InitializeCriticalSection(&m_csResult);
 
-    m_hStatusCheckThread = (HANDLE)_beginthreadex(NULL, 0, Camera_StatusCheckThread, this, 0, NULL);
+    //m_hStatusCheckThread = (HANDLE)_beginthreadex(NULL, 0, Camera_StatusCheckThread, this, 0, NULL);
 }
 
 Camera6467_plate::~Camera6467_plate()
@@ -329,14 +329,14 @@ void Camera6467_plate::ReadConfig()
     strcat_s(iniFileName, INI_FILE_NAME);
 #endif
 
-    //读取可靠性配置文件
-    int iValue = GetPrivateProfileIntA("SaveToBufferPath", "Enable", 0, iniFileName);
-    m_bSaveToBuffer = (iValue == 1) ? true : false;
+    ////读取可靠性配置文件
+    //int iValue = GetPrivateProfileIntA("SaveToBufferPath", "Enable", 0, iniFileName);
+    //m_bSaveToBuffer = (iValue == 1) ? true : false;
 
-    char chTemp[256] = { 0 };
-    //sprintf_s(chTemp, "%d", iLog);
-    sprintf_s(chTemp, sizeof(chTemp), "%d", iValue);
-    WritePrivateProfileStringA("SaveToBufferPath", "Enable", chTemp, iniFileName);
+    //char chTemp[256] = { 0 };
+    ////sprintf_s(chTemp, "%d", iLog);
+    //sprintf_s(chTemp, sizeof(chTemp), "%d", iValue);
+    //WritePrivateProfileStringA("SaveToBufferPath", "Enable", chTemp, iniFileName);
 
     //------------------------------Overlay setting  enable--------------
     //iValue = GetPrivateProfileIntA("Overlay", "Enable", 0, iniFileName);
@@ -1425,7 +1425,7 @@ void Camera6467_plate::CheckStatus()
 
                     if (iFirstConnctSuccess == -1)
                     {
-                        //pThis->ConnectToCamera();
+                        ConnectToCamera();
                     }
                 }
             }

@@ -6,13 +6,16 @@
 #include "HvDevice/HvDeviceNew.h"
 #include "HvDevice/HvCamera.h"
 #include "utilityTool/ToolFunction.h"
+#include "utilityTool/log4z.h"
 #include <process.h>
+#include <exception>
+#include <new>
 
 #define CHECK_ARG(arg)\
-    if (arg == NULL) \
+if (arg == NULL) \
     {\
-        WriteFormatLog("%s is NULL", #arg); \
-        return 0;\
+    WriteFormatLog("%s is NULL", #arg); \
+    return 0; \
     }
 
 Camera6467_VFR::Camera6467_VFR() :
@@ -33,13 +36,14 @@ m_bJpegComplete(false),
 m_hStatusCheckThread(NULL)
 {
     InitializeCriticalSection(&m_csResult);
+    ReadConfig();
 
-    m_hStatusCheckThread = (HANDLE)_beginthreadex(NULL, 0, Camera_StatusCheckThread, this, 0, NULL);
+    //m_hStatusCheckThread = (HANDLE)_beginthreadex(NULL, 0, Camera_StatusCheckThread, this, 0, NULL);
 }
 
 
-Camera6467_VFR::Camera6467_VFR(const char* chIP, HWND hWnd, int Msg):
-BaseCamera(chIP, hWnd, Msg),
+Camera6467_VFR::Camera6467_VFR(const char* chIP, HWND hWnd, int Msg) :
+BaseCamera(chIP, NULL, 0),
 m_dwLastCarID(-1),
 m_iTimeInvl(10),
 m_iSuperLenth(13),
@@ -56,8 +60,9 @@ m_bJpegComplete(false),
 m_hStatusCheckThread(NULL)
 {
     InitializeCriticalSection(&m_csResult);
+    ReadConfig();
 
-    m_hStatusCheckThread = (HANDLE)_beginthreadex(NULL, 0, Camera_StatusCheckThread, this, 0, NULL);
+    //m_hStatusCheckThread = (HANDLE)_beginthreadex(NULL, 0, Camera_StatusCheckThread, this, 0, NULL);
 }
 
 Camera6467_VFR::~Camera6467_VFR()
@@ -103,11 +108,18 @@ void Camera6467_VFR::AnalysisAppendXML(CameraResult* CamResult)
     }
 
     char chTemp[BUFFERLENTH] = { 0 };
+    char chVehType[BUFFERLENTH] = { 0 };
     int iLenth = BUFFERLENTH;
+    bool bIsTruck = false;
 
     if (Tool_GetDataFromAppenedInfo(CamResult->pcAppendInfo, "VehicleType", chTemp, &iLenth))
     {
-        CamResult->iVehTypeNo = AnalysisVelchType(chTemp);
+        //CamResult->iVehTypeNo = AnalysisVelchType(chTemp);
+        if (NULL != strstr(chTemp, "货"))
+        {
+            bIsTruck = true;
+        }
+        strcpy_s(chVehType, sizeof(chVehType), chTemp);
     }
     memset(chTemp, 0, sizeof(chTemp));
     iLenth = BUFFERLENTH;
@@ -116,7 +128,64 @@ void Camera6467_VFR::AnalysisAppendXML(CameraResult* CamResult)
         int iAxleCount = 0;
         sscanf_s(chTemp, "%d", &iAxleCount);
         CamResult->iAxletreeCount = iAxleCount;
-        //printf("the Axletree count is %d.\n", iAxleCount);
+        if (bIsTruck)
+        {
+            switch (iAxleCount - 1)
+            {
+            case -1:
+            case 0:
+            case 1:
+                CamResult->iVehTypeNo = TRUCK_TYPE_1;
+                break;
+            case 2:
+                CamResult->iVehTypeNo = TRUCK_TYPE_2;
+                break;
+            case 3:
+                CamResult->iVehTypeNo = TRUCK_TYPE_3;
+                break;
+            case 4:
+                CamResult->iVehTypeNo = TRUCK_TYPE_4;
+                break;
+            case 5:
+                CamResult->iVehTypeNo = TRUCK_TYPE_5;
+                break;
+            default:
+                CamResult->iVehTypeNo = TRUCK_TYPE_5;
+                break;
+            }
+        }
+        else
+        {
+            //客车的判定不变
+            CamResult->iVehTypeNo = AnalysisVelchType(chVehType);
+            //switch (iAxleCount - 1)
+            //{
+            //case -1:
+            //case 0:
+            //case 1:
+            //    CamResult->iVehTypeNo = BUS_TYPE_1;
+            //    break;
+            //case 2:
+            //    CamResult->iVehTypeNo = BUS_TYPE_2;
+            //    break;
+            //case 3:
+            //    CamResult->iVehTypeNo = BUS_TYPE_3;
+            //    break;
+            //case 4:
+            //    CamResult->iVehTypeNo = BUS_TYPE_4;
+            //    break;
+            //case 5:
+            //    CamResult->iVehTypeNo = BUS_TYPE_5;
+            //    break;
+            //default:
+            //    CamResult->iVehTypeNo = BUS_TYPE_5;
+            //    break;
+            //}
+        }
+        WriteFormatLog("AnalysisAppendXML, the Axletree count is %d, Is truck = %d, vehType = %d.\n",
+            iAxleCount,
+            bIsTruck,
+            CamResult->iVehTypeNo);
     }
     memset(chTemp, 0, sizeof(chTemp));
     iLenth = BUFFERLENTH;
@@ -151,84 +220,84 @@ void Camera6467_VFR::AnalysisAppendXML(CameraResult* CamResult)
     {
         CamResult->bBackUpVeh = true;
     }
-    iLenth = BUFFERLENTH;
-    if (Tool_GetDataFromAppenedInfo(CamResult->pcAppendInfo, "Confidence", chTemp, &iLenth))
-    {
-        float fConfidence = 0;
-        sscanf_s(chTemp, "%f", &fConfidence);
-        CamResult->fConfidenceLevel = fConfidence;
-        //printf("the CarHeight  is %f.\n", fCarHeight);
-    }
+    //iLenth = BUFFERLENTH;
+    //if (Tool_GetDataFromAppenedInfo(CamResult->pcAppendInfo, "Confidence", chTemp, &iLenth))
+    //{
+    //    float fConfidence = 0;
+    //    sscanf_s(chTemp, "%f", &fConfidence);
+    //    CamResult->fConfidenceLevel = fConfidence;
+    //    //printf("the CarHeight  is %f.\n", fCarHeight);
+    //}
 
-    TiXmlElement element = Tool_SelectElementByName(CamResult->pcAppendInfo, "PlateName", 2);
-    if (strlen(element.GetText()) > 0)
-    {
-        memset(CamResult->chPlateNO, 0, sizeof(CamResult->chPlateNO));
-        strcpy_s(CamResult->chPlateNO, sizeof(CamResult->chPlateNO), element.GetText());
+    //TiXmlElement element = Tool_SelectElementByName(CamResult->pcAppendInfo, "PlateName", 2);
+    //if (strlen(element.GetText()) > 0)
+    //{
+    //    memset(CamResult->chPlateNO, 0, sizeof(CamResult->chPlateNO));
+    //    strcpy_s(CamResult->chPlateNO, sizeof(CamResult->chPlateNO), element.GetText());
 
-        memset(chTemp, 0, sizeof(chTemp));
-        strcpy_s(chTemp, sizeof(chTemp), element.GetText());
+    //    memset(chTemp, 0, sizeof(chTemp));
+    //    strcpy_s(chTemp, sizeof(chTemp), element.GetText());
 
-        iLenth = strlen(chTemp);
-        printf("find the plate number = %s, plate length = %d\n", chTemp, iLenth);
-        if (strlen(chTemp) > 0)
-        {
-            if (NULL != strstr(chTemp, "蓝") && NULL == strstr(chTemp, "白"))
-            {
-                CamResult->iPlateColor = COLOR_BLUE;
-                printf("find plate color COLOR_BLUE.\n");
-            }
-            else if (NULL != strstr(chTemp, "黄"))
-            {
-                CamResult->iPlateColor = COLOR_YELLOW;
-                printf("find plate color COLOR_YELLOW.\n");
-            }
-            else if (NULL != strstr(chTemp, "黑"))
-            {
-                CamResult->iPlateColor = COLOR_BLACK;
-                printf("find plate color COLOR_BLACK.\n");
-            }
-            else if (NULL != strstr(chTemp, "白") && NULL == strstr(chTemp, "蓝"))
-            {
-                CamResult->iPlateColor = COLOR_WHITE;
-                printf("find plate color COLOR_WHITE.\n");
-            }
-            else if (NULL != strstr(chTemp, "绿"))
-            {
-                size_t ilen = strlen(chTemp);
-                if (chTemp[ilen - 1] == 'D' || chTemp[ilen - 1] == 'F')
-                {
-                    CamResult->iPlateColor = COLOR_YELLOW_GREEN;
-                    printf("find plate color COLOR_YELLOW_GREEN.\n");
-                }
-                else
-                {
-                    CamResult->iPlateColor = COLOR_GRADIENT_CREEN;
-                    printf("find plate color COLOR_GRADIENT_CREEN.\n");
-                }
-            }
-            else if (NULL != strstr(chTemp, "蓝") && NULL != strstr(chTemp, "白"))
-            {
-                CamResult->iPlateColor = COLOR_BLUE_WHIETE;
-                printf("find plate color COLOR_BLUE_WHIETE.\n");
-            }
-            else
-            {
-                CamResult->iPlateColor = COLOR_UNKNOW;
-                printf("find plate color COLOR_UNKNOW.\n");
-            }
-        }
-        else
-        {
-            CamResult->iPlateColor = COLOR_UNKNOW;
-        }
+    //    iLenth = strlen(chTemp);
+    //    printf("find the plate number = %s, plate length = %d\n", chTemp, iLenth);
+    //    if (strlen(chTemp) > 0)
+    //    {
+    //        if (NULL != strstr(chTemp, "蓝") && NULL == strstr(chTemp, "白"))
+    //        {
+    //            CamResult->iPlateColor = COLOR_BLUE;
+    //            printf("find plate color COLOR_BLUE.\n");
+    //        }
+    //        else if (NULL != strstr(chTemp, "黄"))
+    //        {
+    //            CamResult->iPlateColor = COLOR_YELLOW;
+    //            printf("find plate color COLOR_YELLOW.\n");
+    //        }
+    //        else if (NULL != strstr(chTemp, "黑"))
+    //        {
+    //            CamResult->iPlateColor = COLOR_BLACK;
+    //            printf("find plate color COLOR_BLACK.\n");
+    //        }
+    //        else if (NULL != strstr(chTemp, "白") && NULL == strstr(chTemp, "蓝"))
+    //        {
+    //            CamResult->iPlateColor = COLOR_WHITE;
+    //            printf("find plate color COLOR_WHITE.\n");
+    //        }
+    //        else if (NULL != strstr(chTemp, "绿"))
+    //        {
+    //            size_t ilen = strlen(chTemp);
+    //            if (chTemp[ilen - 1] == 'D' || chTemp[ilen - 1] == 'F')
+    //            {
+    //                CamResult->iPlateColor = COLOR_YELLOW_GREEN;
+    //                printf("find plate color COLOR_YELLOW_GREEN.\n");
+    //            }
+    //            else
+    //            {
+    //                CamResult->iPlateColor = COLOR_GRADIENT_CREEN;
+    //                printf("find plate color COLOR_GRADIENT_CREEN.\n");
+    //            }
+    //        }
+    //        else if (NULL != strstr(chTemp, "蓝") && NULL != strstr(chTemp, "白"))
+    //        {
+    //            CamResult->iPlateColor = COLOR_BLUE_WHIETE;
+    //            printf("find plate color COLOR_BLUE_WHIETE.\n");
+    //        }
+    //        else
+    //        {
+    //            CamResult->iPlateColor = COLOR_UNKNOW;
+    //            printf("find plate color COLOR_UNKNOW.\n");
+    //        }
+    //    }
+    //    else
+    //    {
+    //        CamResult->iPlateColor = COLOR_UNKNOW;
+    //    }
 
-    }
-    else
-    {
-        sprintf_s(CamResult->chPlateNO, sizeof(CamResult->chPlateNO), "无车牌");
-        CamResult->iPlateColor = COLOR_UNKNOW;
-    }
+    //}
+    //else
+    //{
+    //    sprintf_s(CamResult->chPlateNO, sizeof(CamResult->chPlateNO), "无车牌");
+    //    CamResult->iPlateColor = COLOR_UNKNOW;
+    //}
 
 }
 
@@ -320,9 +389,9 @@ void Camera6467_VFR::ReadConfig()
     Tool_ReadIntValueFromConfigFile(INI_FILE_NAME, "Filter", "SuperLongVehicleLenth", iTempValue);
     m_iSuperLenth = iTempValue > 0 ? iTempValue : 15;
 
-    //iTempValue = 1500;
-    //Tool_ReadIntValueFromConfigFile(INI_FILE_NAME, "Filter", "ResultTimeOut", iTempValue);
-    //m_iResultTimeOut = iTempValue > 0 ? iTempValue : 1500;    
+    iTempValue = 3000;
+    Tool_ReadIntValueFromConfigFile(INI_FILE_NAME, "Filter", "ResultTimeOut", iTempValue);
+    m_iResultTimeOut = iTempValue > 0 ? iTempValue : 3000;
 
     BaseCamera::ReadConfig();
 }
@@ -381,7 +450,7 @@ void Camera6467_VFR::SendConnetStateMsg(bool isConnect)
         if (m_hWnd != NULL)
         {
             ::PostMessage(m_hWnd, m_iConnectMsg, NULL, NULL);
-        }        
+        }
         LeaveCriticalSection(&m_csFuncCallback);
     }
     else
@@ -403,7 +472,7 @@ void Camera6467_VFR::SendConnetStateMsg(bool isConnect)
         if (m_hWnd != NULL)
         {
             ::PostMessage(m_hWnd, m_iDisConMsg, NULL, NULL);
-        }        
+        }
         LeaveCriticalSection(&m_csFuncCallback);
     }
 }
@@ -454,31 +523,64 @@ bool Camera6467_VFR::OpenPlateCamera(const char* ipAddress)
 
 std::shared_ptr<CameraResult> Camera6467_VFR::GetFrontResult()
 {
-    std::shared_ptr<CameraResult> pResultPlate;
-    std::shared_ptr<CameraResult> pResultVFR;
-    bool bGetPlateNo = false;
-    if (m_Camera_Plate)
+    try
     {
-        CameraResult* pTemp = m_Camera_Plate->GetOneResult();
-        pResultPlate = std::shared_ptr<CameraResult>(pTemp);
-        bGetPlateNo = (pTemp == NULL) ? false : true;
-        pTemp = NULL;
-    }
-    else
-    {
-        pResultPlate = m_resultList.front();
-    }
-    if (pResultPlate != nullptr)
-    {
+        WriteFormatLog("Camera6467_VFR::GetFrontResult,  begin");
+        std::shared_ptr<CameraResult> pResultPlate;
+        std::shared_ptr<CameraResult> pResultVFR;
+        bool bGetPlateNo = false;
+        if (m_Camera_Plate)
+        {
+            WriteFormatLog("Camera6467_VFR::GetFrontResult,   plate camera is not null, begin to GetOneResult from plate camera.");
+            CameraResult* pTemp = m_Camera_Plate->GetOneResult();
+            if (pTemp != NULL)
+            {
+                WriteFormatLog("Camera6467_VFR::GetFrontResult, GetOneResult from plate camera success.");
+                pResultPlate = std::shared_ptr<CameraResult>(pTemp);
+                bGetPlateNo = true;
+                pTemp = NULL;
+            }
+            else
+            {
+                WriteFormatLog("Camera6467_VFR::GetFrontResult, GetOneResult from plate camera failed.");
+                bGetPlateNo = false;
+            }
+        }
+
+        if (!bGetPlateNo)
+        {
+            if (!m_resultList.empty())
+            {
+                WriteFormatLog("Camera6467_VFR::GetFrontResult, Get result  from plate camera failed  and  VFR is not empty ,so get the first result.");
+                pResultPlate = m_resultList.front();
+            }
+            else
+            {
+                WriteFormatLog("Camera6467_VFR::GetFrontResult,  m_resultList is empty, wait %d  ms.", m_iResultTimeOut);
+                DWORD dwTickBegin = GetTickCount();
+                do
+                {
+                    pResultPlate = m_resultList.front();
+                    if (pResultPlate != nullptr)
+                    {
+                        WriteFormatLog("Camera6467_VFR::GetFrontResult,  wait success., plate no = %s", pResultPlate->chPlateNO);
+                        break;
+                    }
+                    Sleep(100);
+                } while (GetTickCount() - dwTickBegin < m_iResultTimeOut);
+                WriteFormatLog("Camera6467_VFR::GetFrontResult,  m_resultList is empty, wait %d  ms finish.", m_iResultTimeOut);
+            }
+        }
+
         if (bGetPlateNo)
         {
-            WriteFormatLog("Get one result from plate camera , plate : %s.", pResultPlate->chPlateNO);
-            WriteFormatLog("GetFrontResult, plate No list:\n");
+            WriteFormatLog("Camera6467_VFR::GetFrontResult, Get one result from plate camera , plate : %s.", pResultPlate->chPlateNO);
+            WriteFormatLog("Camera6467_VFR::GetFrontResult, , plate No list:\n");
             BaseCamera::WriteLog(m_resultList.GetAllPlateString().c_str());
             int iIndex = -1;
             if (strstr(pResultPlate->chPlateNO, "无"))
             {
-                WriteFormatLog("GetFrontResult, current plate no is 无车牌, use first result .");
+                WriteFormatLog("Camera6467_VFR::GetFrontResult, , current plate no is 无车牌, use first result .");
                 iIndex = -1;
             }
             else
@@ -487,127 +589,225 @@ std::shared_ptr<CameraResult> Camera6467_VFR::GetFrontResult()
             }
             if (-1 != iIndex)
             {
-                WriteFormatLog("find the result from list, index = %d.", iIndex);
+                WriteFormatLog("Camera6467_VFR::GetFrontResult, find the result from list, index = %d.", iIndex);
                 pResultVFR = m_resultList.GetOneByIndex(iIndex);
             }
             else
             {
-                if (!m_resultList.empty())
+                //if (!m_resultList.empty())
+                //{
+                //    WriteFormatLog("can not find result from list, Get first result.");
+                //    pResultVFR = m_resultList.front();
+                //}
+                //else
+                //{
+                //    WriteFormatLog("can not find result from list, the list is empty.");
+                //}
+                if (NULL != strstr(pResultPlate->chPlateNO, "黄"))
                 {
-                    WriteFormatLog("can not find result from list, Get first result.");
-                    pResultVFR = m_resultList.front();
+                    pResultPlate->iVehTypeNo = TRUCK_TYPE_5;
+                    WriteFormatLog("Camera6467_VFR::GetFrontResult, can not find result from list, the plate number %s contain ‘黄’,use TRUCK_TYPE_5  defaults.",
+                        pResultPlate->chPlateNO);
                 }
                 else
                 {
-                    WriteFormatLog("can not find result from list, the list is empty.");
+                    pResultPlate->iVehTypeNo = BUS_TYPE_1;
+                    WriteFormatLog("Camera6467_VFR::GetFrontResult, can not find result from list, the plate number %s not contain ‘黄’,use BUS_TYPE_1  defaults.",
+                        pResultPlate->chPlateNO);
                 }
+                pResultVFR = pResultPlate;
             }
         }
         else
         {
-            WriteFormatLog("can not get result from plate camera, get from VFR list.");
+            WriteFormatLog("Camera6467_VFR::GetFrontResult, can not get result from plate camera, get from VFR list.");
             if (!m_resultList.empty())
             {
-                WriteFormatLog("Get first result.");
+                WriteFormatLog("Camera6467_VFR::GetFrontResult, Get first result.");
                 pResultVFR = m_resultList.front();
             }
             else
             {
-                WriteFormatLog("The list is empty.");
+                WriteFormatLog("Camera6467_VFR::GetFrontResult, The list is empty.");
             }
         }
+
+        return pResultVFR;
     }
-    else
+    catch (bad_exception& e)
     {
-        WriteFormatLog("Can not get result from  camera .");
+        LOGFMTE("Camera6467_VFR::GetFrontResult, , bad_exception, error msg = %s", e.what());
+
+        return std::make_shared<CameraResult>();
     }
-    return pResultVFR;
+    catch (bad_alloc& e)
+    {
+        LOGFMTE("Camera6467_VFR::GetFrontResult, , bad_alloc, error msg = %s", e.what());
+
+        return std::make_shared<CameraResult>();
+    }
+    catch (exception& e)
+    {
+        LOGFMTE("Camera6467_VFR::GetFrontResult, , exception, error msg = %s.", e.what());
+
+        return std::make_shared<CameraResult>();
+    }
+    catch (void*)
+    {
+        LOGFMTE("GetFroCamera6467_VFR::GetFrontResult, ntResult,  void* exception");
+        return std::make_shared<CameraResult>();
+    }
+    catch (...)
+    {
+        LOGFMTE("Camera6467_VFR::GetFrontResult, ,  unknown exception");
+        return std::make_shared<CameraResult>();
+    }
 }
 
 std::shared_ptr<CameraResult> Camera6467_VFR::GetFrontResultByPosition(int position)
 {
-    WriteFormatLog("GetFrontResultByPosition , position = %d", position);
-    std::shared_ptr<CameraResult> tempResult;
-    if (m_resultList.empty())
+    try
     {
-        WriteFormatLog("GetFrontResultByPosition , resultList is empty, return null.");
-        return tempResult;
-    }
-    if (position <= 0)
-    {
-        tempResult = GetFrontResult();
-    }
-    else
-    {
-        if (position >= m_resultList.size())
+        WriteFormatLog("GetFrontResultByPosition , position = %d", position);
+        std::shared_ptr<CameraResult> tempResult;
+        if (m_resultList.empty())
         {
-            WriteFormatLog("GetFrontResultByPosition , position : %d is larger than  resultList size %d, get the last one.", 
-                position, 
-                m_resultList.size());
-            tempResult = m_resultList.GetOneByIndex(m_resultList.size() - 1);
+            WriteFormatLog("GetFrontResultByPosition , resultList is empty, return null.");
+            return tempResult;
+        }
+        if (position <= 0)
+        {
+            tempResult = GetFrontResult();
         }
         else
         {
-            tempResult = m_resultList.GetOneByIndex(position-1);
+            if (position >= m_resultList.size())
+            {
+                WriteFormatLog("GetFrontResultByPosition , position : %d is larger than  resultList size %d, get the last one.",
+                    position,
+                    m_resultList.size());
+                tempResult = m_resultList.GetOneByIndex(m_resultList.size() - 1);
+            }
+            else
+            {
+                tempResult = m_resultList.GetOneByIndex(position);
+            }
         }
+        WriteFormatLog("GetFrontResultByPosition ,finish");
+        return tempResult;
     }
-    WriteFormatLog("GetFrontResultByPosition ,finish");
-    return tempResult;
+    catch (bad_exception& e)
+    {
+        LOGFMTE("GetFrontResultByPosition, bad_exception, error msg = %s", e.what());
+
+        return std::make_shared<CameraResult>();
+    }
+    catch (bad_alloc& e)
+    {
+        LOGFMTE("GetFrontResultByPosition, bad_alloc, error msg = %s", e.what());
+
+        return std::make_shared<CameraResult>();
+    }
+    catch (exception& e)
+    {
+        LOGFMTE("GetFrontResultByPosition, exception, error msg = %s.", e.what());
+
+        return std::make_shared<CameraResult>();
+    }
+    catch (void*)
+    {
+        LOGFMTE("GetFrontResultByPosition,  void* exception");
+        return std::make_shared<CameraResult>();
+    }
+    catch (...)
+    {
+        LOGFMTE("GetFrontResultByPosition,  unknown exception");
+        return std::make_shared<CameraResult>();
+    }
 }
 
 void Camera6467_VFR::DeleteFrontResult(const char* plateNo)
 {
-    WriteFormatLog("DeleteFrontResult, plate no = %p", plateNo);
-    bool bHasPlateNo = false;
-    if (NULL != plateNo && strlen(plateNo) > 0)
+    try
     {
-        bHasPlateNo = true;
-    }
-    std::string strPlateNo;
-    if (bHasPlateNo)
-    {
-        strPlateNo = plateNo;
-        WriteFormatLog("DeleteFrontResult, has plate no : %s", plateNo);
-    }
-    else
-    {
-        CameraResult* pResult = NULL;
-        if (m_Camera_Plate != nullptr
-            && NULL != (pResult = m_Camera_Plate->GetOneResult())
-            )
+        WriteFormatLog("DeleteFrontResult, plate no = %p", plateNo);
+        bool bHasPlateNo = false;
+        if (NULL != plateNo && strlen(plateNo) > 0)
         {
-            strPlateNo = pResult->chPlateNO;
-            SAFE_DELETE_OBJ(pResult);
-            WriteFormatLog("DeleteFrontResult, get from plate camera, plate no : %s", strPlateNo.c_str());
+            bHasPlateNo = true;
+        }
+        std::string strPlateNo;
+        if (bHasPlateNo)
+        {
+            strPlateNo = plateNo;
+            WriteFormatLog("DeleteFrontResult, has plate no : %s", plateNo);
         }
         else
         {
-            WriteFormatLog("DeleteFrontResult, cant not get plate number from plate camera.");
+            if (m_Camera_Plate != nullptr)
+            {
+                WriteFormatLog("DeleteFrontResult, get from plate camera:");
+                CameraResult* pResult = m_Camera_Plate->GetOneResult();
+                if (NULL != pResult)
+                {
+                    strPlateNo = pResult->chPlateNO;
+                    SAFE_DELETE_OBJ(pResult);
+                    WriteFormatLog("DeleteFrontResult, plate no : %s", strPlateNo.c_str());
+                }
+                else
+                {
+                    WriteFormatLog("DeleteFrontResult,can not get from plate camera.");
+                }
+            }
+            else
+            {
+                WriteFormatLog("DeleteFrontResult, cant not get plate number from plate camera.");
+            }
         }
-    }
 
-    if (strPlateNo.empty())
-    {
-        WriteFormatLog("DeleteFrontResult, cant not get plate number , so delete front result.");
-        m_resultList.pop_front();
-    }
-    else
-    {
-        if (std::string::npos == strPlateNo.find("车"))
+        if (strPlateNo.empty())
         {
-            int iPosition = m_resultList.GetPositionByPlateNo(strPlateNo.c_str());
-            WriteFormatLog("DeleteFrontResult, GetPositionByPlateNo %d.", iPosition);
-            m_resultList.DeleteToPosition(iPosition);
+            WriteFormatLog("DeleteFrontResult, cant not get plate number , so delete front result.");
+            m_resultList.pop_front();
         }
         else
         {
-            WriteFormatLog("DeleteFrontResult, current plate  %s == ‘无车牌’, do nothing.", strPlateNo.c_str());
+            if (std::string::npos == strPlateNo.find("无"))
+            {
+                int iPosition = m_resultList.GetPositionByPlateNo(strPlateNo.c_str());
+                WriteFormatLog("DeleteFrontResult, GetPositionByPlateNo %d.", iPosition);
+                m_resultList.DeleteToPosition(iPosition);
+            }
+            else
+            {
+                WriteFormatLog("DeleteFrontResult, current plate  %s == ‘无车牌’, do nothing.", strPlateNo.c_str());
+            }
         }
-    }
-    WriteFormatLog("DeleteFrontResult, final list:");
-    BaseCamera::WriteLog(m_resultList.GetAllPlateString().c_str());
+        WriteFormatLog("DeleteFrontResult, final list:");
+        BaseCamera::WriteLog(m_resultList.GetAllPlateString().c_str());
 
-    WriteFormatLog("DeleteFrontResult, finish");
+        WriteFormatLog("DeleteFrontResult, finish");
+    }
+    catch (bad_exception& e)
+    {
+        LOGFMTE("DeleteFrontResult, bad_exception, error msg = %s", e.what());
+    }
+    catch (bad_alloc& e)
+    {
+        LOGFMTE("DeleteFrontResult, bad_alloc, error msg = %s", e.what());
+    }
+    catch (exception& e)
+    {
+        LOGFMTE("DeleteFrontResult, exception, error msg = %s.", e.what());
+    }
+    catch (void*)
+    {
+        LOGFMTE("DeleteFrontResult,  void* exception");
+    }
+    catch (...)
+    {
+        LOGFMTE("DeleteFrontResult,  unknown exception");
+    }
 }
 
 void Camera6467_VFR::ClearALLResult()
@@ -627,137 +827,221 @@ size_t Camera6467_VFR::GetResultListSize()
 
 int Camera6467_VFR::RecordInfoBegin(DWORD dwCarID)
 {
-    WriteFormatLog("RecordInfoBegin, dwCarID = %lu", dwCarID);
-    SAFE_DELETE_OBJ(m_pResult);
-    //m_Result = std::make_shared<CameraResult>();
-    if (NULL == m_pResult)
+    try
     {
-        m_pResult = new CameraResult();
+        WriteFormatLog("RecordInfoBegin, dwCarID = %lu", dwCarID);
+        SAFE_DELETE_OBJ(m_pResult);
+        //m_Result = std::make_shared<CameraResult>();
+        if (NULL == m_pResult)
+        {
+            m_pResult = new CameraResult();
+        }
+        CHECK_ARG(m_pResult);
+
+        m_pResult->dwCarID = dwCarID;
+
+        WriteFormatLog("RecordInfoBegin, finish.");
+        return 0;
     }
-    CHECK_ARG(m_pResult);
-
-    m_pResult->dwCarID = dwCarID;
-
-    WriteFormatLog("RecordInfoBegin, finish.");
-    return 0;
+    catch (bad_exception& e)
+    {
+        LOGFMTE("RecordInfoBegin, bad_exception, error msg = %s", e.what());
+        return 0;
+    }
+    catch (bad_alloc& e)
+    {
+        LOGFMTE("RecordInfoBegin, bad_alloc, error msg = %s", e.what());
+        return 0;
+    }
+    catch (exception& e)
+    {
+        LOGFMTE("RecordInfoBegin, exception, error msg = %s.", e.what());
+        return 0;
+    }
+    catch (void*)
+    {
+        LOGFMTE("Camera6467_VFR::RecordInfoBegin,  void* exception");
+        return 0;
+    }
+    catch (...)
+    {
+        LOGFMTE("Camera6467_VFR::DeleteFrontResult,  unknown exception");
+        return 0;
+    }
 }
 
 int Camera6467_VFR::RecordInfoEnd(DWORD dwCarID)
 {
-    WriteFormatLog("RecordInfoEnd, dwCarID = %lu", dwCarID);
-    CHECK_ARG(m_pResult);
-
-    if (dwCarID == m_pResult->dwCarID)
+    try
     {
-        if (CheckIfBackUpVehicle(m_pResult))
+        WriteFormatLog("RecordInfoEnd, dwCarID = %lu", dwCarID);
+        CHECK_ARG(m_pResult);
+
+        if (dwCarID == m_pResult->dwCarID)
         {
-            WriteFormatLog("current result is reversing car, drop this result.");
+            if (CheckIfBackUpVehicle(m_pResult))
+            {
+                WriteFormatLog("current result is reversing car, drop this result.");
+            }
+            else
+            {
+                if (CheckIfSuperLength(m_pResult))
+                {
+                    WriteFormatLog("current length %f is larger than max length %d, clear list first.", m_pResult->fVehLenth, m_iSuperLenth);
+                    m_resultList.ClearALL();
+                }
+                WriteFormatLog("push one result to list, current list plate NO:\n");
+                if (!m_resultList.empty())
+                {
+                    BaseCamera::WriteLog(m_resultList.GetAllPlateString().c_str());
+                }
+                else
+                {
+                    WriteFormatLog("list is empty.");
+                }
+                std::shared_ptr<CameraResult> pResult(m_pResult);
+                if (m_dwLastCarID == dwCarID)
+                {
+                    WriteFormatLog("current car ID  %lu is  same wit last carID %lu, replace the last one.", dwCarID, m_dwLastCarID);
+                    m_resultList.pop_back();
+                }
+                else
+                {
+                    m_dwLastCarID = dwCarID;
+                }
+                m_resultList.push_back(pResult);
+                WriteFormatLog("after push, list plate NO:\n");
+                BaseCamera::WriteLog(m_resultList.GetAllPlateString().c_str());
+                m_pResult = NULL;
+            }
+
+            if (NULL != m_hMsgHanldle)
+            {
+                WriteLog("PostMessage");
+                //::PostMessage(*((HWND*)m_hWnd),m_iMsg, 1, 0);
+                ::PostMessage((HWND)m_hMsgHanldle, m_iResultMsg, (WPARAM)1, 0);
+            }
         }
         else
         {
-            if (CheckIfSuperLength(m_pResult))
-            {
-                WriteFormatLog("current length %f is larger than max length %d, clear list first.", m_pResult->fVehLenth, m_iSuperLenth);
-                m_resultList.ClearALL();
-            }
-            WriteFormatLog("push one result to list, current list plate NO:\n");
-            if (!m_resultList.empty())
-            {
-                BaseCamera::WriteLog(m_resultList.GetAllPlateString().c_str());
-            }
-            else
-            {
-                WriteFormatLog("list is empty.");
-            }
-            std::shared_ptr<CameraResult> pResult(m_pResult);
-            if (m_dwLastCarID == dwCarID)
-            {
-                WriteFormatLog("current car ID  %lu is  same wit last carID %lu, replace the last one.", dwCarID, m_dwLastCarID);
-                m_resultList.pop_back();
-            }
-            else
-            {
-                m_dwLastCarID = dwCarID;
-            }
-            m_resultList.push_back(pResult);
-            WriteFormatLog("after push, list plate NO:\n");
-            BaseCamera::WriteLog(m_resultList.GetAllPlateString().c_str());
-            m_pResult = NULL;
+            WriteFormatLog("current car ID  %lu is not same wit result carID %lu.", dwCarID, m_pResult->dwCarID);
         }
-
-        if (NULL != m_hMsgHanldle)
-        {
-            WriteLog("PostMessage");
-            //::PostMessage(*((HWND*)m_hWnd),m_iMsg, 1, 0);
-            ::PostMessage((HWND)m_hMsgHanldle, m_iResultMsg, (WPARAM)1, 0);
-        }
+        WriteFormatLog("RecordInfoEnd, finish");
+        return 0;
     }
-    else
+    catch (bad_exception& e)
     {
-        WriteFormatLog("current car ID  %lu is not same wit result carID %lu.", dwCarID, m_pResult->dwCarID);
+        LOGFMTE("RecordInfoEnd, bad_exception, error msg = %s", e.what());
+        return 0;
     }
-    WriteFormatLog("RecordInfoEnd, finish");
-    return 0;
+    catch (bad_alloc& e)
+    {
+        LOGFMTE("RecordInfoEnd, bad_alloc, error msg = %s", e.what());
+        return 0;
+    }
+    catch (exception& e)
+    {
+        LOGFMTE("RecordInfoEnd, exception, error msg = %s.", e.what());
+        return 0;
+    }
+    catch (void*)
+    {
+        LOGFMTE("RecordInfoEnd,  void* exception");
+        return 0;
+    }
+    catch (...)
+    {
+        LOGFMTE("RecordInfoEnd, unknown exception");
+        return 0;
+    }
 }
 
 int Camera6467_VFR::RecordInfoPlate(DWORD dwCarID,
-    LPCSTR pcPlateNo, 
+    LPCSTR pcPlateNo,
     LPCSTR pcAppendInfo,
     DWORD dwRecordType,
     DWORD64 dw64TimeMS)
 {
-    WriteFormatLog("RecordInfoPlate, dwCarID = %lu, plateNo = %s, dwRecordType= %x, dw64TimeMS= %I64u", 
-        dwCarID,
-        pcPlateNo,
-        dwRecordType,
-        dw64TimeMS);
-    BaseCamera::WriteLog(pcAppendInfo);
-    CHECK_ARG(m_pResult);
-
-    if (dwCarID == m_pResult->dwCarID)
+    try
     {
-        m_pResult->dw64TimeMS = dw64TimeMS;
-        strcpy_s(m_pResult->chPlateNO, sizeof(m_pResult->chPlateNO), pcPlateNo);
-        if (strlen(pcAppendInfo)< sizeof(m_pResult->pcAppendInfo))
+        WriteFormatLog("RecordInfoPlate, dwCarID = %lu, plateNo = %s, dwRecordType= %x, dw64TimeMS= %I64u",
+            dwCarID,
+            pcPlateNo,
+            dwRecordType,
+            dw64TimeMS);
+        BaseCamera::WriteLog(pcAppendInfo);
+        CHECK_ARG(m_pResult);
+
+        if (dwCarID == m_pResult->dwCarID)
         {
-            strcpy_s(m_pResult->pcAppendInfo, sizeof(m_pResult->pcAppendInfo), pcAppendInfo);
-            AnalysisAppendXML(m_pResult);
+            m_pResult->dw64TimeMS = dw64TimeMS;
+            strcpy_s(m_pResult->chPlateNO, sizeof(m_pResult->chPlateNO), pcPlateNo);
+            if (strlen(pcAppendInfo) < sizeof(m_pResult->pcAppendInfo))
+            {
+                strcpy_s(m_pResult->pcAppendInfo, sizeof(m_pResult->pcAppendInfo), pcAppendInfo);
+                AnalysisAppendXML(m_pResult);
+            }
+            else
+            {
+                WriteFormatLog("strlen(pcAppendInfo)< sizeof(m_pResult->pcAppendInfo), can not AnalysisAppendXML.");
+            }
         }
         else
         {
-            WriteFormatLog("strlen(pcAppendInfo)< sizeof(m_pResult->pcAppendInfo), can not AnalysisAppendXML.");
+            WriteFormatLog("current car ID  %lu is not same wit result carID %lu.", dwCarID, m_pResult->dwCarID);
         }
-    }
-    else
-    {
-        WriteFormatLog("current car ID  %lu is not same wit result carID %lu.", dwCarID, m_pResult->dwCarID);
-    }
 
-    WriteFormatLog("RecordInfoPlate, finish.");
-    return 0;
+        WriteFormatLog("RecordInfoPlate, finish.");
+        return 0;
+    }
+    catch (bad_exception& e)
+    {
+        LOGFMTE("RecordInfoPlate, bad_exception, error msg = %s", e.what());
+        return 0;
+    }
+    catch (bad_alloc& e)
+    {
+        LOGFMTE("RecordInfoPlate, bad_alloc, error msg = %s", e.what());
+        return 0;
+    }
+    catch (exception& e)
+    {
+        LOGFMTE("RecordInfoPlate, exception, error msg = %s.", e.what());
+        return 0;
+    }
+    catch (void*)
+    {
+        LOGFMTE("RecordInfoPlate,  void* exception");
+        return 0;
+    }
+    catch (...)
+    {
+        LOGFMTE("RecordInfoPlate, unknown exception");
+        return 0;
+    }
 }
 
-int Camera6467_VFR::RecordInfoBigImage(DWORD dwCarID, 
+int Camera6467_VFR::RecordInfoBigImage(DWORD dwCarID,
     WORD wImgType,
-    WORD wWidth, 
-    WORD wHeight, 
+    WORD wWidth,
+    WORD wHeight,
     PBYTE pbPicData,
     DWORD dwImgDataLen,
-    DWORD dwRecordType, 
+    DWORD dwRecordType,
     DWORD64 dw64TimeMS)
 {
     WriteFormatLog("RecordInfoBigImage, dwCarID = %lu, wImgType = %u, wWidth= %u, wHeight= %u, \
-        dwImgDataLen= %lu, dwRecordType = %x, dw64TimeMS = %I64u.",
-        dwCarID,
-        wImgType,
-        wWidth,
-        wHeight,
-        dwImgDataLen,
-        dwRecordType,
-        dw64TimeMS);
+                           dwImgDataLen= %lu, dwRecordType = %x, dw64TimeMS = %I64u.",
+                           dwCarID,
+                           wImgType,
+                           wWidth,
+                           wHeight,
+                           dwImgDataLen,
+                           dwRecordType,
+                           dw64TimeMS);
 
     CHECK_ARG(m_pResult);
-    
+
     if (dwCarID == m_pResult->dwCarID)
     {
         if (wImgType == RECORD_BIGIMG_BEST_SNAPSHOT)
@@ -808,19 +1092,19 @@ int Camera6467_VFR::RecordInfoBigImage(DWORD dwCarID,
 int Camera6467_VFR::RecordInfoSmallImage(DWORD dwCarID,
     WORD wWidth,
     WORD wHeight,
-    PBYTE pbPicData, 
-    DWORD dwImgDataLen, 
+    PBYTE pbPicData,
+    DWORD dwImgDataLen,
     DWORD dwRecordType,
     DWORD64 dw64TimeMS)
 {
     WriteFormatLog("RecordInfoSmallImage, dwCarID = %lu, wWidth= %u, wHeight= %u, \
-                                              dwImgDataLen= %lu, dwRecordType = %x, dw64TimeMS = %I64u.",
-                                              dwCarID,
-                                              wWidth,
-                                              wHeight,
-                                              dwImgDataLen,
-                                              dwRecordType,
-                                              dw64TimeMS);
+                                                                 dwImgDataLen= %lu, dwRecordType = %x, dw64TimeMS = %I64u.",
+                                                                 dwCarID,
+                                                                 wWidth,
+                                                                 wHeight,
+                                                                 dwImgDataLen,
+                                                                 dwRecordType,
+                                                                 dw64TimeMS);
 
     CHECK_ARG(m_pResult);
 
@@ -894,22 +1178,22 @@ int Camera6467_VFR::RecordInfoSmallImage(DWORD dwCarID,
     return 0;
 }
 
-int Camera6467_VFR::RecordInfoBinaryImage(DWORD dwCarID, 
-    WORD wWidth, 
-    WORD wHeight, 
-    PBYTE pbPicData, 
+int Camera6467_VFR::RecordInfoBinaryImage(DWORD dwCarID,
+    WORD wWidth,
+    WORD wHeight,
+    PBYTE pbPicData,
     DWORD dwImgDataLen,
-    DWORD dwRecordType, 
+    DWORD dwRecordType,
     DWORD64 dw64TimeMS)
 {
     WriteFormatLog("RecordInfoBinaryImage, dwCarID = %lu, wWidth= %u, wHeight= %u, \
-                                                                                    dwImgDataLen= %lu, dwRecordType = %x, dw64TimeMS = %I64u.",
-                                                                                    dwCarID,
-                                                                                    wWidth,
-                                                                                    wHeight,
-                                                                                    dwImgDataLen,
-                                                                                    dwRecordType,
-                                                                                    dw64TimeMS);
+                                                                                                       dwImgDataLen= %lu, dwRecordType = %x, dw64TimeMS = %I64u.",
+                                                                                                       dwCarID,
+                                                                                                       wWidth,
+                                                                                                       wHeight,
+                                                                                                       dwImgDataLen,
+                                                                                                       dwRecordType,
+                                                                                                       dw64TimeMS);
     CHECK_ARG(m_pResult);
     if (dwCarID == m_pResult->dwCarID)
     {
@@ -991,7 +1275,7 @@ void Camera6467_VFR::CheckStatus()
 
                     if (iFirstConnctSuccess == -1)
                     {
-                        //pThis->ConnectToCamera();
+                        ConnectToCamera();
                     }
                 }
             }

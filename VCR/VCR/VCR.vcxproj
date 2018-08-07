@@ -96,6 +96,7 @@
     <ClInclude Include="targetver.h" />
     <ClInclude Include="tinyxml\tinystr.h" />
     <ClInclude Include="tinyxml\tinyxml.h" />
+    <ClInclude Include="utilityTool\log4z.h" />
     <ClInclude Include="utilityTool\ToolFunction.h" />
     <ClInclude Include="VCR.h" />
   </ItemGroup>
@@ -122,6 +123,7 @@
     <ClCompile Include="tinyxml\tinyxml.cpp" />
     <ClCompile Include="tinyxml\tinyxmlerror.cpp" />
     <ClCompile Include="tinyxml\tinyxmlparser.cpp" />
+    <ClCompile Include="utilityTool\log4z.cpp" />
     <ClCompile Include="utilityTool\ToolFunction.cpp" />
     <ClCompile Include="VCR.cpp" />
   </ItemGroup>
